@@ -22,6 +22,13 @@ dependencies {
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
+
+	//orm, db
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	runtimeOnly 'com.h2database:h2'
+
+	//google api
+	implementation 'com.google.api-client:google-api-client:1.32.1'
 }
 
 tasks.named('test') {
