@@ -1,8 +1,14 @@
 package test.test.filter.authentication;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.util.Utils;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.json.JsonFactory;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
+import lombok.SneakyThrows;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,13 +23,23 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.Collections;
 
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private HttpSecurity httpSecurity;
     private SecuritySigner securitySigner;
     private JWK jwk;
+
+    private static Integer GOOGLE = 0;
+    private static Integer KAKAO = 1;
+    private static Integer BASIC = 2;
+
+    private String email;
+    private String password;
 
     /**
      * 알고리즘과 SINGER를 추상적으로 받아 처리
@@ -37,24 +53,64 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     /**
      * username과 password를 받아 해결
      * */
+    @SneakyThrows
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+            throws AuthenticationException {
+
+        /**로그인 방식 Check*/
+        Integer Case = loginCaseCheck(request);
+
+        if (Case == GOOGLE) {
+
+            /**idToken Check Function*/
+            GoogleIdToken idToken = checkGoogleIdToken(request);
+
+            if (idToken != null) {
+                GoogleIdToken.Payload payload = idToken.getPayload();
+
+                //user identifier
+                String userId = payload.getSubject();
+                // Get profile information from payload
+                String name = payload.getEmail();
+
+                email = name;
+                password = userId;
+            } else {
+                throw new IllegalArgumentException("Invalid ID token.");
+            }
+        } else if (Case == BASIC) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            LoginDto loginDto = null;
+            try {
+
+                loginDto = objectMapper.readValue(request.getInputStream(), LoginDto.class);
+
+                email = loginDto.getUsername();
+                password = loginDto.getPassword();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         AuthenticationManager authenticationManager = httpSecurity.getSharedObject(AuthenticationManager.class);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        LoginDto loginDto = null;
-        try {
-
-            loginDto = objectMapper.readValue(request.getInputStream(), LoginDto.class);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword());
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(email, password);
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
         return authentication;
+    }
+
+    private Integer loginCaseCheck(HttpServletRequest request) {
+        String value = request.getHeader("LoginCase").toString();
+        if (value.equals("google")) {
+            System.out.println("google login start");
+            return 0;
+        } else if (value.equals("kakao")) {
+            System.out.println("kakao login start");
+            return 1;
+        }
+        System.out.println("basic login start");
+        return 2;
     }
 
     /**
@@ -76,5 +132,24 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         } catch (JOSEException e) {
             e.printStackTrace();
         }
+    }
+
+
+    /**
+     * Check Google Id Token
+     * */
+    public GoogleIdToken checkGoogleIdToken(HttpServletRequest request) throws GeneralSecurityException, IOException {
+
+        HttpTransport transport = Utils.getDefaultTransport();
+        JsonFactory jsonFactory = Utils.getDefaultJsonFactory();
+
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                .setAudience(Collections.singletonList("162441855133-gd4n562pio08v1jtjrcnlrvo7o35d0c7.apps.googleusercontent.com"))
+                .build();
+
+        String token = request.getHeader("Authorization");
+        GoogleIdToken idToken = verifier.verify(token);
+
+        return idToken;
     }
 }
