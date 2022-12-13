@@ -25,6 +25,7 @@ import test.test.filter.authentication.JwtAuthenticationFilter;
 import test.test.filter.authorization.JwtAuthorizationFilter;
 import test.test.filter.authorization.JwtAuthorizationRsaFilter;
 import test.test.signature.RSASecuritySigner;
+import test.test.web.service.CustomUserDetailsService;
 
 import java.util.Arrays;
 
@@ -36,6 +37,9 @@ public class OAuth2ResourceServer {
 
     @Autowired
     private RSAKey rsaKey;
+
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -52,7 +56,7 @@ public class OAuth2ResourceServer {
          * 그리고 선택된 Public 키를 가지고 검증
          */
         //사용자 정보 로드해서 객체 생성
-        http.userDetailsService(getUserDetailsService());
+        http.userDetailsService(userDetailsService);
 
         http.oauth2ResourceServer().jwt();
         //인증 필터
@@ -68,11 +72,11 @@ public class OAuth2ResourceServer {
 //        return new JwtAuthorizationRsaFilter(rsaKey);
 //    }
 
-    private UserDetailsService getUserDetailsService() {
-        User user = new User("user", "1234", Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
-        InMemoryUserDetailsManager userDetailsManager = new InMemoryUserDetailsManager(user);
-        return userDetailsManager;
-    }
+//    private UserDetailsService getUserDetailsService() {
+//        User user = new User("user", "1234", Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
+//        InMemoryUserDetailsManager userDetailsManager = new InMemoryUserDetailsManager(user);
+//        return userDetailsManager;
+//    }
 
     //패스워드 인코드 하지 않음
     @Bean
