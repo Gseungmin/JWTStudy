@@ -6,9 +6,13 @@ import com.google.api.client.googleapis.util.Utils;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import test.test.dto.UserDto;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -28,5 +32,17 @@ public class IndexController {
     public Authentication user(Authentication authentication) {
 
         return authentication;
+    }
+
+    @GetMapping("/userInfo")
+    public UserDto userInfo(Authentication authentication,
+                            @AuthenticationPrincipal Jwt principal) {
+
+        System.out.println("principal = " + principal);
+
+        String username = (String) principal.getClaim("username");
+        UserDto userDto = new UserDto(username);
+
+        return userDto;
     }
 }

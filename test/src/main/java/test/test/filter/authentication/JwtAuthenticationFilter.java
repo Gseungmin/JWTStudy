@@ -34,6 +34,9 @@ import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
+import static test.test.Object.ClientId;
+import static test.test.Object.Sub;
+
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private HttpSecurity httpSecurity;
@@ -115,7 +118,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                 String id = element.getAsJsonObject().get("kakao_account").getAsJsonObject().get("email").getAsString();
 
                 email = id;
-                password = "117069320589700689011";
+                password = Sub;
 
                 br.close();
             } catch (IOException exception) {
@@ -185,7 +188,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         JsonFactory jsonFactory = Utils.getDefaultJsonFactory();
 
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
-                .setAudience(Collections.singletonList("162441855133-gd4n562pio08v1jtjrcnlrvo7o35d0c7.apps.googleusercontent.com"))
+                .setAudience(Collections.singletonList(ClientId))
                 .build();
 
         String token = request.getHeader("Authorization");

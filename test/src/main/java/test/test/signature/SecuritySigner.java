@@ -29,7 +29,7 @@ public abstract class SecuritySigner {
                 .issuer("http://localhost:8081")
                 .claim("username", user.getUsername())
                 .claim("authority", authority)
-                .expirationTime(new Date(new Date().getTime() + 60 * 1000 * 60))
+                .expirationTime(new Date(new Date().getTime() + 60 * 60 * 60 * 1000 * 60))
                 .build();
 
         /**
